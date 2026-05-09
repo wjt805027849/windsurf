@@ -2,6 +2,8 @@
 
 A Flask-based web app for batch registration workflows, task tracking, and export management.
 
+English | [简体中文](README.zh-CN.md)
+
 ## Features
 
 - Start and stop batch tasks from a web UI
