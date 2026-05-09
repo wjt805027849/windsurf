@@ -105,4 +105,4 @@ python server.py
 
 ## 友链
 
-- [Linux.do](https://linux.do/)
+[Linux.do](https://linux.do/)

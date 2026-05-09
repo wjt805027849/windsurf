@@ -105,4 +105,4 @@ Default URL:
 
 ## Links
 
-- Friend link: [Linux.do](https://linux.do/)
+[Linux.do](https://linux.do/)
