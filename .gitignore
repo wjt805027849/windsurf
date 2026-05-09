@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime and export data
+backups/
+task_exports/
+
+# Sensitive/local runtime config
+config.json
+
+# Large account/import datasets
+accounts*.json
+cockpit_direct_import*.json

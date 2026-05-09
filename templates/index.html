@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Windsurf Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 p-4">
+  <div class="max-w-7xl mx-auto space-y-4">
+    <h1 class="text-2xl font-bold">Windsurf Register 控制台</h1>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl p-4 border">
+        <h2 class="font-semibold mb-3">代理配置</h2>
+        <input id="proxy-http" class="w-full border rounded p-2 mb-2" placeholder="HTTP 代理" value="http://127.0.0.1:7890" />
+        <input id="proxy-https" class="w-full border rounded p-2 mb-3" placeholder="HTTPS 代理" value="http://127.0.0.1:7890" />
+        <button id="save-config" class="w-full bg-slate-900 text-white rounded p-2">保存代理配置</button>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border">
+        <h2 class="font-semibold mb-3">任务</h2>
+        <input id="reg-count" type="number" class="w-full border rounded p-2 mb-2" value="30" />
+        <input id="reg-threads" type="number" class="w-full border rounded p-2 mb-2" value="5" />
+        <label class="inline-flex items-center gap-2 text-sm mb-3"><input id="stop-on-success" type="checkbox" /> 按成功数停止</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="start-task" class="bg-blue-600 text-white rounded p-2">开始</button>
+          <button id="stop-task" class="bg-red-600 text-white rounded p-2">停止</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border">
+        <h2 class="font-semibold mb-3">状态</h2>
+        <div id="status-text" class="text-sm">空闲</div>
+        <div class="text-sm">成功: <span id="stat-success">0</span></div>
+        <div class="text-sm">失败: <span id="stat-failed">0</span></div>
+        <div class="text-sm">速率: <span id="stat-speed">0/h</span></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 border">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="font-semibold">日志</h2>
+        <button id="clear-logs" class="text-sm text-blue-600">清空</button>
+      </div>
+      <div id="logs" class="h-64 overflow-y-auto bg-slate-900 text-slate-200 rounded p-3 text-sm font-mono"></div>
+    </section>
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl p-4 border">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="font-semibold">最近任务账号（10条）</h2>
+          <button id="refresh-accounts" class="text-sm text-blue-600">刷新</button>
+        </div>
+        <div id="accounts" class="text-sm space-y-1"></div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="font-semibold">最近 7 天导出</h2>
+          <button id="refresh-exports" class="text-sm text-blue-600">刷新</button>
+        </div>
+        <div id="exports" class="text-sm space-y-2"></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 border">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="font-semibold">备份列表</h2>
+        <button id="refresh-backups" class="text-sm text-blue-600">刷新</button>
+      </div>
+      <div id="backups" class="text-sm space-y-1 max-h-72 overflow-y-auto"></div>
+    </section>
+  </div>
+
+  <script>
+    const logs = document.getElementById('logs');
+    const statusText = document.getElementById('status-text');
+    const statSuccess = document.getElementById('stat-success');
+    const statFailed = document.getElementById('stat-failed');
+    const statSpeed = document.getElementById('stat-speed');
+
+    function addLog(msg) {
+      const d = document.createElement('div');
+      d.textContent = msg;
+      logs.appendChild(d);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    async function loadConfig() {
+      const res = await fetch('config');
+      if (!res.ok) return;
+      const cfg = await res.json();
+      document.getElementById('proxy-http').value = cfg.http || '';
+      document.getElementById('proxy-https').value = cfg.https || '';
+    }
+
+    async function updateStatus() {
+      const res = await fetch('status');
+      if (!res.ok) return;
+      const data = await res.json();
+      statusText.textContent = data.is_running ? `运行中 ${data.completed_count}/${data.total_count}` : '空闲';
+      statSuccess.textContent = data.success_count ?? 0;
+      statFailed.textContent = data.failed_count ?? 0;
+      statSpeed.textContent = `${data.success_per_hour ?? 0}/h`;
+      (data.new_logs || []).forEach(addLog);
+    }
+
+    async function updateAccounts() {
+      const res = await fetch('accounts');
+      if (!res.ok) return;
+      const data = (await res.json()).slice().reverse().slice(0, 10);
+      const box = document.getElementById('accounts');
+      if (!data.length) { box.innerHTML = '<div class="text-slate-400">暂无数据</div>'; return; }
+      box.innerHTML = data.map(a => {
+        const email = a.email || a.github_email || 'unknown';
+        const key = a.apiKey || a.windsurf_api_key || 'None';
+        return `<div class="border-b pb-1"><span class="font-mono">${email}</span> | key: <span class="font-mono">${key}</span></div>`;
+      }).join('');
+    }
+
+    async function updateExports() {
+      const res = await fetch('exports');
+      if (!res.ok) return;
+      const tasks = await res.json();
+      const box = document.getElementById('exports');
+      if (!tasks.length) { box.innerHTML = '<div class="text-slate-400">最近7天暂无导出</div>'; return; }
+      box.innerHTML = tasks.map(t => {
+        const end = t.ended_at || '进行中';
+        return `<div class="border rounded p-2 bg-slate-50">
+          <div class="font-mono text-xs">${t.task_id}</div>
+          <div>成功 ${t.success_count} / 失败 ${t.failed_count} / 开始 ${t.started_at} / 结束 ${end}</div>
+          <div class="space-x-2">
+            <a class="text-blue-600" href="${t.download_url}">下载原始</a>
+            <a class="text-emerald-600" href="${t.custom_download_url}">下载兼容</a>
+            <a class="text-violet-600" href="${t.session_download_url}">下载 Session Token(每行)</a>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function updateBackups() {
+      const res = await fetch('backups');
+      if (!res.ok) return;
+      const items = await res.json();
+      const box = document.getElementById('backups');
+      if (!items.length) { box.innerHTML = '<div class="text-slate-400">暂无备份</div>'; return; }
+      box.innerHTML = items.map(i => `<div><a class="text-blue-600" href="${i.download_url}">${i.name}</a> <span class="text-slate-500">(${i.updated_at})</span></div>`).join('');
+    }
+
+    document.getElementById('save-config').onclick = async () => {
+      const payload = {
+        http: document.getElementById('proxy-http').value.trim(),
+        https: document.getElementById('proxy-https').value.trim()
+      };
+      const res = await fetch('config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      addLog(res.ok && data.status === 'ok' ? '代理配置已保存' : '代理保存失败');
+    };
+
+    document.getElementById('start-task').onclick = async () => {
+      const payload = {
+        count: Number(document.getElementById('reg-count').value || 1),
+        threads: Number(document.getElementById('reg-threads').value || 1),
+        stop_on_success: document.getElementById('stop-on-success').checked,
+        export_custom_format: false
+      };
+      const res = await fetch('start_batch', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      addLog(data.status === 'ok' ? '任务已启动' : `启动失败: ${data.message || 'unknown'}`);
+    };
+
+    document.getElementById('stop-task').onclick = async () => { await fetch('stop', {method: 'POST'}); addLog('已发送停止信号'); };
+    document.getElementById('clear-logs').onclick = () => logs.innerHTML = '';
+    document.getElementById('refresh-accounts').onclick = updateAccounts;
+    document.getElementById('refresh-exports').onclick = updateExports;
+    document.getElementById('refresh-backups').onclick = updateBackups;
+
+    loadConfig();
+    updateAccounts();
+    updateExports();
+    updateBackups();
+    updateStatus();
+    setInterval(updateStatus, 1000);
+  </script>
+</body>
+</html>
