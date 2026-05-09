@@ -1,37 +1,37 @@
 # Windsurf Register
 
-基于 Flask 的批量注册与结果导出工具，前端页面与后端服务集成在同一个项目中。
+A Flask-based web app for batch registration workflows, task tracking, and export management.
 
-## 功能说明
+## Features
 
-- Web 页面控制批量任务启动/停止
-- 支持并发线程执行注册任务
-- 支持任务状态与日志查询
-- 支持导出任务结果（raw/custom/session）
-- 支持代理配置在线更新并持久化到 `config.json`
+- Start and stop batch tasks from a web UI
+- Run registration workers with configurable concurrency
+- Track runtime status and incremental logs
+- Download export data in multiple formats (`raw`, `custom`, `session`)
+- Update and persist proxy settings via `config.json`
 
-## 目录结构
+## Project Structure
 
 ```text
 WindsurfRegister_Deploy/
-  server.py                 # Flask 后端入口（默认 5000 端口）
-  templates/index.html      # 前端页面
-  requirements.txt          # Python 依赖
-  start.sh                  # Linux 启动脚本
-  start.bat                 # Windows 启动脚本
-  config.example.json       # 配置示例（请复制为 config.json）
-  task_exports/             # 任务导出文件（运行后生成）
-  backups/                  # 备份目录（运行后生成）
+  server.py                 # Flask app entrypoint (port 5000)
+  templates/index.html      # Web UI
+  requirements.txt          # Python dependencies
+  start.sh                  # Linux start script
+  start.bat                 # Windows start script
+  config.example.json       # Config template (copy to config.json)
+  task_exports/             # Task export files (created at runtime)
+  backups/                  # Backup files (created at runtime)
 ```
 
-## 环境要求
+## Requirements
 
 - Python 3.8+
 - pip
 
-## 快速开始
+## Quick Start
 
-1. 创建并激活虚拟环境
+1. Create and activate a virtual environment
 
 ```bash
 python -m venv .venv
@@ -41,38 +41,38 @@ source .venv/bin/activate
 # .\.venv\Scripts\Activate.ps1
 ```
 
-2. 安装依赖
+2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 初始化配置
+3. Initialize config
 
 ```bash
 cp config.example.json config.json
 ```
 
-Windows 可手动复制：
+Windows PowerShell alternative:
 
 ```powershell
 Copy-Item .\config.example.json .\config.json
 ```
 
-4. 启动服务
+4. Run the server
 
 ```bash
 python server.py
 ```
 
-默认监听：
+Default URLs:
 
 - `http://127.0.0.1:5000`
 - `http://0.0.0.0:5000`
 
-## 反向代理（Nginx 示例）
+## Nginx Reverse Proxy Example
 
-如果你要通过 `/windsurf-register/` 访问，可参考：
+Use this when exposing the app under `/windsurf-register/`:
 
 ```nginx
 location = /windsurf-register {
@@ -90,20 +90,19 @@ location ^~ /windsurf-register/ {
 }
 ```
 
-## 常用接口
+## Main Endpoints
 
-- `GET /`：首页
-- `GET /status`：运行状态与增量日志
-- `POST /start_batch`：启动批量任务
-- `POST /stop`：停止任务
-- `GET /accounts`：当前任务账号结果
-- `GET /exports`：最近导出任务
-- `GET /download?format=raw|custom|session`：下载最新任务导出
-- `POST /config` / `GET /config`：读写代理配置
+- `GET /` - index page
+- `GET /status` - runtime status and incremental logs
+- `POST /start_batch` - start batch task
+- `POST /stop` - stop running task
+- `GET /accounts` - results of current/latest task
+- `GET /exports` - recent exports
+- `GET /download?format=raw|custom|session` - download latest export
+- `POST /config` and `GET /config` - update/read proxy config
 
-## 数据与安全建议
+## Data Safety Notes
 
-- `config.json` 可能包含本地代理信息，默认不入库
-- `accounts*.json`、`cockpit_direct_import*.json` 可能包含敏感账号数据，默认不入库
-- 请不要将真实账号、令牌、代理凭据提交到 GitHub
-
+- `config.json` can contain local proxy details and is ignored by Git
+- `accounts*.json` and `cockpit_direct_import*.json` may contain sensitive data and are ignored by Git
+- Do not commit real credentials, tokens, or private proxy information
