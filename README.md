@@ -1,14 +1,29 @@
 # Windsurf Register
 
-A Flask-based web app for batch registration workflows, task tracking, and export management.
+A Flask-based web app for batch registration workflows, task tracking, proxy rotation, and export management.
 
 English | [简体中文](README.zh-CN.md)
+
+## Screenshots
+
+Desktop overview:
+
+![Dashboard Overview](assets/screenshots/dashboard-overview.png)
+
+Desktop full view:
+
+![Dashboard Tall](assets/screenshots/dashboard-tall.png)
+
+Mobile view:
+
+![Dashboard Mobile](assets/screenshots/dashboard-mobile.png)
 
 ## Features
 
 - Start and stop batch tasks from a web UI
 - Run registration workers with configurable concurrency
-- Track runtime status and incremental logs
+- Rotate across a proxy pool
+- Track provider health, timings, and fallback behavior
 - Download export data in multiple formats (`raw`, `custom`, `session`)
 - Update and persist proxy settings via `config.json`
 
@@ -21,15 +36,11 @@ WindsurfRegister_Deploy/
   requirements.txt          # Python dependencies
   start.sh                  # Linux start script
   start.bat                 # Windows start script
-  config.example.json       # Config template (copy to config.json)
-  task_exports/             # Task export files (created at runtime)
-  backups/                  # Backup files (created at runtime)
+  config.example.json       # Config template
+  assets/screenshots/       # README screenshots
+  task_exports/             # Task export files
+  backups/                  # Backup files
 ```
-
-## Requirements
-
-- Python 3.8+
-- pip
 
 ## Quick Start
 
@@ -37,10 +48,13 @@ WindsurfRegister_Deploy/
 
 ```bash
 python -m venv .venv
-# Linux/macOS
 source .venv/bin/activate
-# Windows PowerShell
-# .\.venv\Scripts\Activate.ps1
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
 2. Install dependencies
@@ -55,7 +69,7 @@ pip install -r requirements.txt
 cp config.example.json config.json
 ```
 
-Windows PowerShell alternative:
+Windows PowerShell:
 
 ```powershell
 Copy-Item .\config.example.json .\config.json
@@ -67,35 +81,15 @@ Copy-Item .\config.example.json .\config.json
 python server.py
 ```
 
-Default URLs:
+Default URL:
 
 - `http://127.0.0.1:5000`
-- `http://0.0.0.0:5000`
-
-## Nginx Reverse Proxy Example
-
-Use this when exposing the app under `/windsurf-register/`:
-
-```nginx
-location = /windsurf-register {
-    return 301 /windsurf-register/;
-}
-
-location ^~ /windsurf-register/ {
-    proxy_pass http://127.0.0.1:5000/;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Host $host;
-}
-```
 
 ## Main Endpoints
 
 - `GET /` - index page
 - `GET /status` - runtime status and incremental logs
+- `GET /providers` - temp-mail source health and metrics
 - `POST /start_batch` - start batch task
 - `POST /stop` - stop running task
 - `GET /accounts` - results of current/latest task
@@ -106,5 +100,9 @@ location ^~ /windsurf-register/ {
 ## Data Safety Notes
 
 - `config.json` can contain local proxy details and is ignored by Git
-- `accounts*.json` and `cockpit_direct_import*.json` may contain sensitive data and are ignored by Git
+- `accounts*.json` and `cockpit_direct_import*.json` can contain sensitive data and are ignored by Git
 - Do not commit real credentials, tokens, or private proxy information
+
+## Links
+
+- Friend link: [Linux.do](https://linux.do/)
